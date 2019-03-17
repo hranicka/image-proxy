@@ -10,24 +10,24 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
-const (
-	sourceUrl = "url"
-)
-
 var (
-	addr = flag.String("addr", "localhost:8085", "Listen address")
+	listenAddr  = flag.String("listen", "localhost:8080", "Listening address")
+	timeout     = flag.String("timeout", "10", "HTTP timeout in seconds")
+	sourceParam = flag.String("source", "url", "Source URL query string parameter")
 )
 
 func main() {
 	flag.Parse()
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	timeoutSec, _ := strconv.Atoi(*timeout)
+	client := &http.Client{Timeout: time.Duration(timeoutSec) * time.Second}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		src := r.URL.Query().Get(sourceUrl)
+		src := r.URL.Query().Get(*sourceParam)
 		log.Println(src)
 
 		// parse and validate source url
@@ -86,8 +86,8 @@ func main() {
 		}
 	})
 
-	fmt.Println("listening on", *addr)
-	if err := http.ListenAndServe(*addr, nil); err != nil {
+	fmt.Println("listening on", *listenAddr)
+	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatalln(err)
 	}
 }
