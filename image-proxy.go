@@ -3,15 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/disintegration/imaging"
 )
 
 var (
@@ -28,6 +26,10 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		src := r.URL.Query().Get(*sourceParam)
+		if src == "" {
+			http.Error(w, "source url parameter is required", http.StatusBadRequest)
+			return
+		}
 		log.Println(src)
 
 		// parse and validate source url
@@ -55,33 +57,15 @@ func main() {
 		}
 
 		// decode source image
-		img, format, err := image.Decode(resp.Body)
+		img, err := imaging.Decode(resp.Body)
 		if err != nil {
-			http.Error(w, "image: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "failed to open image: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		switch format {
-		case "jpeg":
-			w.Header().Set("Content-Type", "image/jpg")
-			if err := jpeg.Encode(w, img, &jpeg.Options{Quality: 85}); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		case "gif":
-			w.Header().Set("Content-Type", "image/gif")
-			if err := gif.Encode(w, img, nil); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		case "png":
-			w.Header().Set("Content-Type", "image/png")
-			if err := png.Encode(w, img); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		default:
-			http.Error(w, "unsupported format: "+format, http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "image/jpg")
+		if err := imaging.Encode(w, img, imaging.JPEG); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	})
