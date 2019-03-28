@@ -15,7 +15,7 @@ import (
 
 var (
 	listenAddr  = flag.String("listen", "localhost:8080", "Listening address")
-	timeout     = flag.String("timeout", "10", "HTTP timeout in seconds")
+	timeout     = flag.Duration("timeout", 10, "HTTP timeout in seconds")
 	paramSource = flag.String("param-source", "url", "Source URL query string parameter")
 	paramWidth  = flag.String("param-width", "w", "Width query string parameter")
 	paramHeight = flag.String("param-height", "h", "Height query string parameter")
@@ -24,8 +24,7 @@ var (
 func main() {
 	flag.Parse()
 
-	timeoutSec, _ := strconv.Atoi(*timeout)
-	client := &http.Client{Timeout: time.Duration(timeoutSec) * time.Second}
+	client := &http.Client{Timeout: *timeout * time.Second}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// parse and validate parameters
